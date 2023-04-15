@@ -1,0 +1,157 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+## Intro to Data Science - HW 1
+##### Copyright 2022, Jeffrey Stanton, Jeffrey Saltz, and Jasmina Tacheva
+
+```{r}
+# Enter your name here: Piyush Khedkar
+```
+
+### Attribution statement: (choose only one and delete the rest)
+
+```{r}
+# 1. I did this homework by myself, with help from the book and the professor.
+```
+
+Define a variable:
+
+```{r}
+value <- 150
+```
+
+Print the content of this new variable:
+
+```{r}
+print(value)
+```
+
+Define the following vectors, which represent the **hospital capacity** (measured in number of hospital beds) and **number of colleges** in each of the five counties in Central New York (CNY)   **Cayuga**, **Cortland**, **Madison**, **Onondaga**, and **Oswego**, in this order (e.g. the first number in the **capacity** vector suggests there are 124 hospital beds in Cayuga county):
+
+```{r}
+capacity <- c(124, 70, 51, 1403, 86)
+colleges <- c(2, 2, 3, 9, 2)
+```
+
+# Part 1: Calculating statistics using R  
+
+A.	Show the number of observations in the **capacity** vector with the length() function: 
+
+```{r}
+no_of_hospital_county <- length(capacity)
+no_of_hospital_county
+```
+
+B.	Show the number of observations in the **colleges** vector with the length() function:
+
+```{r}
+no_of_colleges <- length(colleges)
+no_of_colleges
+```
+
+C.	Calculate the average number of colleges in CNY using the mean() function:
+
+```{r}
+mean(colleges)
+```
+
+D.	Calculate the total number of colleges in CNY using the sum() function:
+
+```{r}
+sum_colleges <- sum(colleges)
+sum_colleges
+```
+
+E.	Calculate the average CNY hospital capacity using the mean() function:
+
+```{r}
+mean(capacity)
+```
+
+F.	Calculate the total hospital capacity in CNY using the sum() function:
+
+```{r}
+total_hospital_capacity <- sum(capacity)
+total_hospital_capacity
+```
+
+G.	Calculate the average number of colleges in CNY again, this time using **the results from steps B & D**:
+
+```{r}
+average_no_of_colleges <- sum_colleges/no_of_colleges
+average_no_of_colleges
+```
+
+H.	Calculate the average CNY hospital capacity again, this time using **the results from steps A & F**:
+
+```{r}
+average_hospital_capacity <- total_hospital_capacity/no_of_hospital_county
+average_hospital_capacity
+```
+
+# Part 2: Using the max/min and range functions in R
+
+I.	How many colleges does the county with most colleges have? Hint: Use the max() function:
+
+```{r}
+max(colleges)
+```
+
+J.	What is the hospital capacity of the county with the smallest number of hospital beds in CNY? **Hint:** Use the min() function:
+
+```{r}
+min(capacity)
+```
+
+K.	Display the number of beds in the county with the highest hospital capacity and the county with the lowest hospital capacity together, using a single command. **Hint:** Use the range() function:
+
+```{r}
+range(capacity)
+```
+
+# Part 3: Vector Math
+
+L.	Create a new vector called **lowerCap**, which is the current hospital capacity of each county **- 10** (each county has 10 less hospital beds):
+
+```{r}
+lowerCap <- capacity - 10
+lowerCap
+```
+
+M.	 Calculate the average of **lowerCap**:
+
+```{r}
+mean(lowerCap)
+```
+
+N. Create another vector called **megaCap**, which is the original hospital capacity in each county (stored in **capacity**) plus **value** (the variable we declared in the beginning of this assignment). 
+
+```{r}
+megaCap <- capacity + value
+megaCap
+```
+
+O. Print the content of **megaCap**:
+
+```{r}
+print(megaCap)
+```
+
+P.	In a variable called **bigCap**, store all the hospital numbers from the original **capacity** vector which are **greater than 80** (using **subsetting** in R):
+
+```{r}
+bigCap <- capacity[capacity > 80]
+bigCap
+```
+
+Q.	Print the length of **bigCap** and explain in a comment how many counties have more than 80 hospital beds:
+
+```{r}
+print(length(bigCap))
+# Since bigCap vector has all the counties with capacity greater than 80 beds, the length
+#of bigCap will give the number of counties that have more than 80 hospital bed which is 3.
+```
+
