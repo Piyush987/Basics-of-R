@@ -1,0 +1,202 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Intro to Data Science - HW 7
+##### Copyright 2022, Jeffrey Stanton, Jeffrey Saltz, and Jasmina Tacheva
+
+```{r}
+# Enter your name here: Piyush Khedkar
+```
+
+
+### Attribution statement: (choose only one and delete the rest)
+
+```{r}
+# 1. I did this homework by myself, with help from the book and the professor.
+
+```
+
+In our last assignment, we explored **data visualization** in R using the **ggplot2** package. This homework continues to use ggplot, but this time, with maps.  In addition, we will merge datasets using the built-in **merge( )** function, which provides a similar capability to a **JOIN in SQL** (don't worry if you do not know SQL). Many analytical strategies require joining data from different sources based on a ** key **   a field that two datasets have in common. 
+
+## Step 1: Load the food scarcity data
+
+A. Limited access to supermarkets, supercenters, grocery stores, or other sources of healthy and affordable food may make it harder for some people to eat a healthy diet. There are many ways to measure food store access and many ways to define which areas are low access   neighborhoods that lack healthy food sources. In this homework assignment, we will focus on **accessibility to sources of healthy food, as measured by the distance to a store** in an area.
+
+This dataset contains a variable, **LAPOP1_10**, which denotes the number of people living beyond 1 mile for urban areas or 10 miles for rural areas from a supermarket in all counties of the United States.
+
+Read the data from the following URL: https://data-science-intro.s3.us-east-2.amazonaws.com/FoodInsecurity.csv
+
+<br> Store it in a dataframe called **dfIns** and examine it, describing in a comment what you see.
+
+
+
+
+```{r}
+ dfIns <- data.frame(read.csv("https://data-science-intro.s3.us-east-2.amazonaws.com/FoodInsecurity.csv"))
+summary(dfIns)
+# Dataset has 8 columns with State, County, Pop in 2010, largest_city, etc
+# It also has avg poverty rate, median family income in each county which combined
+# with LAPOP1_10 gives idea about food insercurity in the county.
+```
+
+B.	Calculate the **average** of **MedianFamilyIncome** in the dataframe. Why is using mean() directly not working? Find a way to correct the data type of this variable so you can calculate the average (and then calculate the average). If you still cannot get a value for the mean, you may need to take care of the missing values in this variable - the **imputeTS** package we have used before might help.
+
+Hint: use **str(dfIns)** or **glimpse(dfIns)** to help understand the dataframe
+
+```{r}
+library(imputeTS)
+str(dfIns$MedianFamilyIncome)
+# Does not work because Medianfamilyincome has character data type
+dfIns$MedianFamilyIncome <-as.double(dfIns$MedianFamilyIncome)
+sum(is.na(dfIns$MedianFamilyIncome))
+# Check for null values, present 2 NA
+dfIns$MedianFamilyIncome <- na_interpolation(dfIns$MedianFamilyIncome)
+# NA values are replaced by interpolation
+mean(dfIns$MedianFamilyIncome)
+```
+
+C.	What is the population of the smallest county in the dataframe? Which state is it in?
+
+```{r}
+index <- which.min(dfIns$Pop2010)
+dfIns[index,]$State
+dfIns[index,]$County
+dfIns[index,]$Pop2010
+# Smallest county Loving County in Texas with pop 82
+```
+
+D. It is hard to understand the significance of the values in **LAPOP1_10** (remember, this is the variable that shows the number of people living too far from a store and thus, considered at risk of food insecurity) without a reference point. Create a new column in **dfIns** called **insecurityRatio** which is the ratio of **LAPOP1_10** to **Pop2010** (the county's population) and describe in a comment what it means.
+
+```{r}
+dfIns$insecurityRatio <- dfIns$LAPOP1_10/dfIns$Pop2010
+# No of people living too far from store divided by total population will give
+# foofd insecurity ratio
+```
+
+E. Provide descriptive statistics for this new variable (e.g. min, max, mean, and standard deviation) and interpret them briefly. Then generate a histogram using ggplot, to confirm (or futher explore) those interpretations.
+
+```{r}
+summary(dfIns$insecurityRatio)
+sd(dfIns$insecurityRatio)
+# Min, max, mean std dev of insecurityRatio
+library(ggplot2)
+dfIns_hist<- ggplot(dfIns) + geom_histogram(aes(insecurityRatio))
+dfIns_hist <- dfIns_hist + ggtitle("Insecurity Ratio Distribution")
+dfIns_hist
+# Max count of ratio is near 0.24 which is mean as well
+```
+
+## Step 2: Merge the food insecurity data with the city data
+
+A.	Read the following JSON file, https://intro-datascience.s3.us-east-2.amazonaws.com/cities.json and store it in a variable called **pop**.
+
+Examine the resulting pop dataframe and add comments explaining what each column contains.
+
+```{r}
+library(RCurl)
+library(jsonlite)
+apiOutput <- getURL('https://intro-datascience.s3.us-east-2.amazonaws.com/cities.json')
+pop <- fromJSON(apiOutput)
+head(pop)
+# dfpop has population of cities latitude, longitude, growth between 2000, 2013
+# in percent, population and state of city
+```
+
+B.	To successfully merge the dataframe **dfIns** with the **pop** dataframe, we need to identify a **column they have in common** which will serve as the ** key ** to merge on. One column both dataframes have is the **city column** (in the case of **dfIns**, it's called **Largest_city**. However, the values in **city** may not necessarily be unique - there may be cities in different states that have the same name. It is far less likely to have two cities with identical names in the same state, however. Therefore, the **city_state** variable in **dfIns** looks like a good candidate to merge on. The only problem is that there is no such variable in the **pop** df per se. Let's go ahead and create it by concatenating the **city** and **state** columns in **pop**. The following code should work - explain in a comment what it does:  
+
+```{r}
+pop$city_state<-paste0(pop$city,", ",pop$state)
+#Creating a new column in pop as city_state which has the city, state for a particular city 
+```
+
+C.	Merge the two dataframes (using the **city_state column** from both dataframes), storing the resulting dataframe in **dfNew**.
+
+```{r}
+dfNew <- merge(dfIns,pop,on= "city_state")
+# dfNew has merged dfIns, pop on key city_state
+```
+
+D.	Review the structure of **dfNew** and explain the columns (aka attributes) in that dataframe.
+
+```{r}
+str(dfNew)
+# dfNew now has LapOP1_10 which denotes the number of people living beyond 1 
+# mile for urban areas from dfIns alongwith avg povertyrate, medianfamilyincome
+# with insecurityRatio, and growth from 2000 to 2013 taken from pop with population
+```
+
+## Step 3: Visualize the data
+
+E.	Plot points (on top of a map of the US) for **each city**. Have the **color** represent the **insecurityRatio**.
+
+```{r}
+library(maps)
+library(ggmap)
+library(mapproj)
+library(ggplot2)
+library(readr)
+
+us <- map_data("state")
+# Creating a new dataframe for the US states data.
+us$state_name <- tolower(us$region) 
+# Converting the region data to lowercase and storing it into a new column.
+map <- ggplot() +
+  geom_polygon(data = us, aes(map_id= state_name,x=long, y=lat, group=group),
+               fill = "white", color = "black") +
+  geom_point(data=dfNew, aes(x=longitude, y=latitude, color=insecurityRatio))
+map
+# Taken a US map and plotted points of city on top of US map with color as
+# insecurityRatio
+```
+
+F.	Add a block comment that critiques the resulting map. 
+
+```{r}
+# The map is not to scale
+```
+
+## Step 4: Group by State
+
+A.	Use **group_by()** and **summarise** to make a dataframe of state-by-state average **insecurityRatio**. Store the result in **dfSimple**.
+
+```{r}
+library(dplyr)
+dfSimple <- dfNew %>% group_by(state)%>% 
+  summarise(state_by_state_avg = mean(insecurityRatio))
+head(dfSimple)
+# dfNew group by state and used summarize to make column state_by_state_avg and
+# stored it in dfSimple
+```
+
+B.	Name the most and least food-insecure states in **dfSimple** and show the code you used to determine them.
+
+```{r}
+dfSimple[which.min(dfSimple$state_by_state_avg),]
+# least populous state - Vermont
+dfSimple[which.max(dfSimple$state_by_state_avg),] 
+# most populous state - Wyoming
+```
+
+## Step 5: Create a map of the U.S.,  with the color of the state representing insecurityRatio
+
+A. Make sure to expand the limits correctly and that you have used **coord_map** appropriately. Comment on the resulting map - what insight can you get from it?
+
+```{r}
+us <- map_data("state")
+us$state <- tolower(us$region)
+dfSimple$state <- tolower(dfSimple$state)
+# Take US map and make state names same
+MergedStates <- merge(us, dfSimple, by = "state")
+# Merged states has both df
+map <- ggplot() + geom_polygon(data=MergedStates, 
+          aes(x=long, y=lat, group=group,fill = state_by_state_avg,
+             size = 0.2)) +
+          coord_map()
+map
+# The darker the blue color more is state_by_state_avg insecurityRatio, lighter
+# the blue color less is avg food insecurity
+```
+

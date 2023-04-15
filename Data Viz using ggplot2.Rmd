@@ -1,0 +1,231 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Intro to Data Science - HW 6
+
+
+##### Copyright Jeffrey Stanton 2022, Jeffrey Saltz, and Jasmina Tacheva
+
+```{r}
+# Enter your name here: Piyush Khedkar
+```
+
+
+### Attribution statement: (choose only one and delete the rest)
+
+```{r}
+# 1. I did this homework by myself, with help from the book and the professor.
+```
+
+**This module:** **Data visualization** is important because many people can make sense of data more easily when it is presented in graphic form. As a data scientist, you will have to present complex data to decision makers in a form that makes the data interpretable for them. From your experience with Excel and other tools, you know that there are a variety of **common data visualizations** (e.g., pie charts). How many of them can you name? <br>
+
+The most powerful tool for data visualization in R is called **ggplot2**. Written by computer/data scientist **Hadley Wickham**, this ** graphics grammar ** tool builds visualizations in layers. This method provides immense flexibility, but takes a bit of practice to master.
+
+## Step 1: Make a copy of the data
+
+A.	Read the **New York State COVID Testing** dataset we used in HW 3 & 4 from this URL: https://data-science-intro.s3.us-east-2.amazonaws.com/NYS_COVID_Testing_.csv <br>
+into a new dataframe called **df**. 
+
+
+```{r}
+library(tidyverse)
+df = read.csv("https://data-science-intro.s3.us-east-2.amazonaws.com/NYS_COVID_Testing_.csv")
+head(df)
+```
+
+B.	Your dataframe, **df**, contains a so-called **multivariate time series**: a sequence of measurements on COVID tests and results captured repeatedly over time (March 2020 - January 2022). Familiarize yourself with the nature of the time variable **TestDate**.
+<br>How often were these measurements taken (in other words, at what frequency were the variables measured)? Put your answer in a comment. 
+
+```{r}
+table(df$AgeGroup) #There are 11 age categories
+# summary(df) #There are 7838 times te measurements were taken, some days where
+# multiple measurements taken on same day for different age caetegories. 
+```
+
+C. What is the data type of **TestDate**? Explain in a comment.
+
+```{r}
+class(df$TestDate)
+# The data type of TestDate is character
+```
+
+D. To properly display the **TestDate** values as dates in our plots, we need to convert **TestDate** to date format with the **as.Date()** function. Run the code below and check the data type of the variable again to make sure it is not coded as text anymore:
+
+```{r}
+df$TestDate<-as.Date(df$TestDate, format = "%m/%d/%Y")
+class(df$TestDate)
+```
+
+```{r}
+# The data type of TestDate is now Date
+```
+
+## Step 2: Clean up the NAs and create subsets
+
+A.	It is always good practice, when you first start working with a dataset, to explore it for missing values. Check the **TotalTests** and **PositiveCases** for missing values. Are there any? What does empty output suggest about the number of missing observations?
+
+Hint: use *is.na()* 
+
+```{r}
+sum(is.na(df$TotalTests))
+# 22 missing values in Total Tests
+sum(is.na(df$PositiveCases))
+# 11 missing values in Positive Cases
+```
+
+B. There is an R package called **imputeTS** specifically designed to repair missing values in time series data. We will use this instead of the simpler way, **mean substitution**, because it tends to be more accurate.
+<br>The **na_interpolation()** function in this package takes advantage of a unique characteristic of time series data: neighboring points in time can be used to  guess  about a missing value in between. <br>Use this function on each of the two numeric variables in **df** and don't forget to **update** them by overwriting them with the output of the **na_interpolation()** function. 
+
+```{r}
+# install.packages("imputeTS", dependencies = TRUE)
+# install.packages("tseries", dependencies = TRUE)
+library(imputeTS)
+length(na_interpolation(df$TotalTests))
+length(na_interpolation(df$PositiveCases))
+df$TotalTests <- na_interpolation(df$TotalTests)
+df$PositiveCases <- na_interpolation(df$PositiveCases)
+```
+
+C. Run the code from A to make sure there is no more missing data:
+
+```{r}
+sum(is.na(df$TotalTests))
+sum(is.na(df$PositiveCases))
+```
+
+D. As we've done before, let's create a new variable which is the ratio of **PositiveCases** to **TotalTests** - save it as an additional variable in **df** called **PositivityRate**:
+
+```{r}
+df$PositivityRate <- df$PositiveCases/df$TotalTests
+length(df$PositivityRate)
+```
+
+E. Create a subset of **df** containing **only the records for children**. Save it in a new dataframe called **dfChildren**. Make sure this new df has **2,010 observations and 8 variables**.
+
+```{r}
+dfChildren <- df[df$AgeCategory == 'children',]
+summary(dfChildren)
+```
+
+F. Create a subset of **df** containing only the records for **young adults**. Save it in a new dataframe called **dfYA**. 
+
+```{r}
+dfYA <- df[df$AgeCategory == 'young_adults',]
+```
+
+G. Using the same logic, create 2 more subsets of **df**: one containing only the records for **middle-aged adults** (call it **dfMA**), and another one with only the data of **older adults** - **dfOA**. After this step, you should have a total of 4 subsets: 
+- dfChildren
+- dfYA
+- dfMA
+- dfOA
+
+```{r}
+dfMA <- df[df$AgeCategory == 'middle-aged_adults',]
+dfOA <- df[df$AgeCategory == 'older_adults',]
+```
+
+## Step 3: Use ggplot to explore the distribution of each variable
+**Don t forget to install and library the ggplot2 package.** Then: <br>
+
+A.	Create a histogram for **PositiveCases** in the **dfOA** dataframe (using **ggplot**). Be sure to add a title and briefly describe what the histogram means in a comment.
+
+```{r}
+library(ggplot2)
+ggplot(dfOA, aes(x=PositiveCases)) + geom_histogram() + ggtitle("Frequency of Positive Cases in Older Adults")
+# PositiveCases highest between 0 to 625
+```
+
+B.	Create histograms (using **ggplot**) of the **PositiveCases** variable in each of the other three subsets from Step 2G. <br>
+For each histogram, comment on its shape - what information can we glean from it?
+
+```{r}
+ggplot(dfChildren, aes(x=PositiveCases)) + geom_histogram() + ggtitle("Frequency of Positive Cases in Children")
+# PositiveCases highest between 0 to 1250
+```
+
+```{r}
+ggplot(dfMA, aes(x=PositiveCases)) + geom_histogram() + ggtitle("Frequency of Positive Cases in Middle Aged Adults")
+# PositiveCases highest between 0 to 1250
+```
+
+```{r}
+ggplot(dfYA, aes(x=PositiveCases)) + geom_histogram() + ggtitle("Frequency of Positive Cases in Young Adults")
+# PositiveCases highest between 0 to 1250
+```
+
+## Step 4: Explore how the data changes over time
+A.	These data were collected in a period of almost 2 years. You can thus observe changes over time with the help of a line chart. Let's focus on the **dfOA** subset first: <br>
+Create a **line chart**, with **TestDate** on the X-axis and **PositivityRate** on the Y-axis.
+
+```{r}
+ggplot(dfOA, aes(x = TestDate, y = PositivityRate)) + geom_line() + ggtitle("Positivty Rate over time")
+# PositivityRate spiked after 2020-04,05 and then dipped to spike a bit in 2021-01
+# and then dipped to spike up again in 2022-01
+```
+
+B.	Next, create similar graphs for each of the other three subsets. Change the **color** of the line plots (any color you want).
+
+```{r}
+ggplot(dfChildren, aes(x = TestDate, y = PositivityRate)) + geom_line(color = "orange") + ggtitle("Positivty Rate over time")
+# PositivityRate spiked after 2020-04,05,06 and then dipped to spike a bit in 2021-01
+# and then dipped in 2021-07 to spike up again in 2022-01
+```
+
+```{r}
+ggplot(dfMA, aes(x = TestDate, y = PositivityRate)) + geom_line(color = "purple") + ggtitle("Positivty Rate over time")
+# PositivityRate spiked after 2020-04 and then 06 and then dipped to spike a bit in 2021-01
+# and then dipped in 2021-07 to spike up again in 2022-01
+```
+
+```{r}
+ggplot(dfYA, aes(x = TestDate, y = PositivityRate)) + geom_line(color = "blue") + ggtitle("Positivty Rate over time")
+# PositivityRate spiked after 2020-04 and then dipped to spike a bit in 2021-01
+# and then dipped in 2021-07 to spike up again in 2022-01
+```
+
+```{r}
+
+```
+
+C.	In a comment, talk about the insights you got from the line charts you created - can you spot any trends within and between the line charts?
+
+```{r}
+# Though the Positivty Rate touched and crossed 1 in Children, YA it remained
+# on 0.4, 0.6 for MA, OA. For all they spiked in the biginning of 2020, then
+# dipped to spike a bit in 2021-01 and then dipped in 2021-07 to spike up 
+# again in 2022-01
+```
+
+D.	Finally, using the **dfOA** subset, create a **scatter plot**, showing **TotalTests** on the x axis, **PositiveCases** on the y axis, and having the **color and size** of the point represent **Year**.
+
+```{r}
+ggplot(dfOA, aes(x=TotalTests,y=PositiveCases)) + geom_point(aes(color = Year, size=Year))
+```
+
+E. Create a similar scatter plot for the **dfYA** subset. 
+
+```{r}
+ggplot(dfYA, aes(x=TotalTests,y=PositiveCases)) + geom_point(aes(color = Year,size=Year))
+```
+
+F.	Create two barcharts (**using ggplot**) that you think would be interesting by exploring any attribute in two of the dataframes that you have already created via a barchart.
+
+```{r}
+ggplot(data=dfChildren, aes(x=AgeGroup, y=PositiveCases)) + geom_bar(stat="identity")+ ggtitle("Barchart for Children")
+
+ggplot(data=dfOA, aes(x=AgeGroup, y=PositiveCases)) + geom_bar(stat="identity")+ ggtitle("Barchart for OA")
+```
+
+G.	Interpret these visualizations, what insight do they provide?
+
+```{r}
+# For Children, more PositiveCases for ages 5 to 19, then 1 to 4, then <1
+# For OA  more PositiveCases for ages 55 to 64, then 65 to 74 and least for 85 +
+# The reason is Children below 1 probably did not interact with a lot of people
+# just like 85+ but 55 to 64, 5 to 19 would be socially active.
+```
+
+

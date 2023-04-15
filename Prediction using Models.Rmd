@@ -1,0 +1,194 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Intro to Data Science HW 9
+##### Copyright 2022, Jeffrey Stanton, Jeffrey Saltz, and Jasmina Tacheva
+
+```{r}
+# Enter your name here: Piyush Khedkar
+```
+
+### Attribution statement: (choose only one and delete the rest)
+
+```{r}
+# 1. I did this homework by myself, with help from the book and the professor.
+```
+
+Supervised learning means that there is a **criterion one is trying to predict**. The typical strategy is to **divide data** into a **training set** and a **test set** (for example, **two-thirds training** and **one-third test**), train the model on the training set, and then see how well the model does on the test set. <br>
+
+**Support vector machines (SVM)** are a highly flexible and powerful method of doing **supervised machine learning**.
+
+Another approach is to use **partition trees (rpart)** 
+
+In this homework, we will use a movie dataset to train an SVM model, as well as an rpart model, to **classify movies into 2 box office groups**   **success** or **failure**. <br>
+
+This kind of classification algorithms is used in many aspects of our lives   from credit card approvals to stock market predictions, and even some medical diagnoses. <br>
+
+## Part 1: Load and condition the data  
+
+A. The code below reads the contents of an Excel file into a dataframe called movies: <br><br>
+
+You will also need to install( ) and library( ) several other libraries, such as **kernlab** and **caret**.
+
+```{r}
+# install.packages('rio')
+library(rio)
+movies = rio::import("https://data-science-intro.s3.us-east-2.amazonaws.com/movies.xlsx")
+```
+
+B.	Which variable contains the outcome we are trying to predict, **whether a movie is a financial success or not**? For the purposes of this analysis, we will focus only on the numeric variables and save them in a new dataframe called **mov**:
+
+```{r}
+mov <- data.frame(belongs_to_collection=movies$belongs_to_collection, 
+                   budget=movies$budget, 
+                   homepage=movies$homepage, 
+                   original_language_en=movies$original_language_en, 
+                   overview=movies$overview, 
+                   popularity=movies$popularity, 
+                   production_companies=movies$production_companies,
+                   runtime=movies$runtime, 
+                   tagline=movies$tagline,  
+                   success=as.factor(movies$success))
+# All numeric columns stored in mov df, success is of factor type
+```
+
+C. What is the total number of observations in **mov**? Show your code.
+
+```{r}
+str(mov)
+# 1374 observations and 10 columns
+```
+
+## Part 2: Create training and test data sets
+
+A.	Using techniques discussed in class, create **two datasets**   one for **training** and one for **testing**.
+
+```{r}
+library(caret)
+library(kernlab)
+trainlist = createDataPartition(mov$success,p=0.75,list=F)
+# Put 75% data in training, 25% in testing
+training <- mov[trainlist,]
+testing <-mov[-trainlist,]
+```
+
+B.	Use the dim( ) function to demonstrate that the resulting training data set and test data set contain the appropriate number of cases.
+
+```{r}
+print(dim(training))
+# training contains 1032 rows
+print(dim(testing))
+# testing contains 342 rows
+```
+
+## Part 3: Build a Model using SVM
+
+A.	Using the caret package, build a support vector model using all of the variables to predict **success**
+
+```{r}
+Svm <- ksvm(success~.,data=training, type = "C-svc", C=5,prob.model = T,cross=3)
+# C-Classification, 3 fold cross validation, building class probabilities
+```
+
+B. Output the model you created in the previous step.
+
+```{r}
+Svm
+# Cross validation error is 48.64% which is a bit high
+```
+
+## Part 4: Predict Values in the Test Data and Create a Confusion Matrix
+
+A.	Use the **predict( )** function to validate the model against the test data. Store the predictions in a variable named **svmPred**.
+
+```{r}
+svmPred <-predict(Svm,testing)
+```
+
+B.	The **svmPred** object contains a list of classifications for successful (=1) or unsuccessful (=0) movies. Review the contents of **svmPred** using **head( )**.
+
+```{r}
+head(svmPred)
+```
+
+C.	Create a **confusion matrix**, using the **table()** function. Write a comment to explain what each of the 4 numbers means.
+
+```{r}
+cm <- table(svmPred,testing$success)
+cm
+# 73 True positive - Correctly classified as positive
+# 79 False Positive - Wrongly classified as positive
+# 92 False Negative - Wrongly classified as negative
+# 98 True Negative - Correctly classified as negative
+```
+
+D.	What is the **accuracy** based on what you see in the confusion matrix? Show your calculation.
+
+```{r}
+# Acc = (TP + TN) / (TP + TN + FP + FN) 
+acc <- (cm[1] + cm[4]) / (cm[1] + cm[2] + cm[3] + cm[4])
+acc
+# Accuracy is 50% which shows the model is not too good
+```
+
+E.	Compare your calculations with the **confusionMatrix()** function from the **caret** package.
+
+```{r}
+confusionMatrix(svmPred,testing$success)
+# CM and Acc is same
+```
+
+F.	Explain, in 2 comments:<br> 1) why it is valuable to have a  test  dataset that is separate from a  training  dataset, and <br>2) what potential ethical challenges may this type of automated classification pose? E.g., if it is used on people rather than movies? 
+
+```{r}
+# 1) Test dataset should be separate because while evaluating the model we want
+# data that the model has not seen before to se the real world performance of
+# the model.
+```
+
+```{r}
+# 2) There would be problems with bias, discrimination based on the data fed to
+# the model. There can also be privacy issues about the data as well.
+```
+
+## Part 5: Now build a tree model (with rpart)
+
+A. Build a model with **rpart**
+<br>
+Note: you might need to install the **e1071** package
+
+```{r}
+# install.packages('e1071')
+library(e1071)
+library(rpart)
+tree<-rpart(success ~ ., data = training, method = "class")
+```
+
+B. Visualize the results using  **rpart.plot()**
+
+```{r}
+# install.packages("rpart.plot")
+library(rpart.plot)
+rpart.plot(tree)
+```
+
+C. Use the **predict()** function to predict the test data, and then generate a **confusion matrix** to explore the results
+
+```{r}
+pred <-predict(tree,testing, type = "class")
+confusionMatrix(pred,testing$success)
+# Accuracy is 51.46%
+```
+
+D. Review the accuracy of the two models - it is not very high. What are some strategies you could use to improve the quality of the models? Answer in a comment block below.
+
+```{r}
+# The accuracy of both vanilla svm, decision tree was around 50, 51% which is not
+# very good. Adding more data, feature selection, algorithm tuning, use of
+# ensemble models are some techniques that can be used to increase the accuracy 
+# of these models to get better predictions.
+```
+
