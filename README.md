@@ -15,4 +15,4 @@ Libraries used:
 11. syuzhet - Sentiment Analysis. 
 12. arules, arulesViz - Association Rule Mining. 
 
-These are collection of codes from IST 687 IDS
+These are a collection of my work in R from IST 687 IDS
