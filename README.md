@@ -6,7 +6,7 @@ Libraries used:
 2. tidyr - Data Wrangling (pivot_longer, drop_na, fill, replace_na). 
 3. stringr - String Manipulation. 
 4. ggplot2 - Data Visualisation. 
-5. jsonlite - Read JSON data (tJSON, fromJSON). 
+5. jsonlite - Read JSON data (toJSON, fromJSON). 
 6. tseries - Time Series. 
 7. ggmap - Data Mapping using geolocation. 
 8. caret - Classification and Regression Training. 
